@@ -1,0 +1,13 @@
+{
+    "name": "coderity/payment",
+    "description": "Coderity Payment connects your Laravel users to Stripe with a simple to use API.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michael Houghton",
+            "email": "me@michaelhoughton.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
