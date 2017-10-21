@@ -2,9 +2,15 @@
 namespace Coderity\Payment;
 
 use Cartalyst\Stripe\Stripe;
+use Laravel\Cashier\Billable;
+use Laravel\Cashier\Stripe\Card as StripeCard;
+use Laravel\Cashier\Stripe\Token as StripeToken;
+use Laravel\Cashier\Stripe\Customer as StripeCustomer;
 
 trait Payment
 {
+    use Billable;
+
     /**
      * Adds a card
      * @param mixed Either an array of params as per the generateToken method or simply a token
@@ -25,13 +31,20 @@ trait Payment
         }
 
         if (!$this->stripe_id) {
-            $customerId = $this->createStripeId();
-        } else {
-            $customerId = $this->stripe_id;
+            $customer = $this->createAsStripeCustomer($token);
+
+            $card = $this->getDefaultCard();
+
+            return [
+                'status' => 'success',
+                'cardId' => $card['id']
+            ];
         }
 
+        $customerId = $this->stripe_id;
+
         try {
-            $stripe = new Stripe(config('services.stripe.secret'));
+            $stripe = new Stripe(Billable::getStripeKey());
 
             $card = $stripe->cards()
                 ->create($customerId, $token);
@@ -49,24 +62,6 @@ trait Payment
     }
 
     /**
-     * Creates a stripe customer and saves the stripe_id
-     * @return string
-     */
-    public function createStripeId()
-    {
-        $stripe = new Stripe(config('services.stripe.secret'));
-
-        $customer = $stripe->customers()->create([
-            'email' => $this->email,
-        ]);
-
-        $this->stripe_id = $customer['id'];
-        $this->save();
-
-        return $customer['id'];
-    }
-
-    /**
      * Deletes a card
      * @param  string $cardId
      * @return array
@@ -81,7 +76,7 @@ trait Payment
         }
 
         try {
-            $stripe = new Stripe(config('services.stripe.secret'));
+            $stripe = new Stripe(Billable::getStripeKey());
 
             $card = $stripe->cards()
                 ->delete($this->stripe_id, $cardId);
@@ -105,7 +100,7 @@ trait Payment
      */
     public function generateToken(array $params)
     {
-        $stripe = new Stripe(config('services.stripe.secret'));
+        $stripe = new Stripe(Billable::getStripeKey());
 
         try {
             $token = $stripe->tokens()->create([
@@ -130,30 +125,46 @@ trait Payment
     }
 
     /**
-     * Gets the users cards
-     * @return array
+     * Gets a card
+     * @param  string $cardId
+     * @return Laravel\Cashier\Stripe\Card
      */
-    public function getCards()
+    public function getCard($cardId)
     {
         if (!$this->stripe_id) {
-            return [];
+            return null;
         }
 
-        $stripe = new Stripe(config('services.stripe.secret'));
+        $customer = $this->asStripeCustomer();
 
-        $cards = $stripe->cards()
-            ->all($this->stripe_id);
-
-        if (empty($cards['data'])) {
-            return [];
+        foreach ($customer->sources->data as $card) {
+            if ($card->id === $cardId) {
+                return $card;
+            }
         }
 
-        $results = [];
-        foreach ($cards['data'] as $card) {
-            $results[] = $card;
+        return null;
+    }
+
+    /**
+     * Returns the default card
+     * @return Laravel\Cashier\Stripe\Card
+     */
+    public function getDefaultCard()
+    {
+        if (!$this->stripe_id) {
+            return null;
         }
 
-        return $results;
+        $customer = $this->asStripeCustomer();
+
+        foreach ($customer->sources->data as $card) {
+            if ($card->id === $customer->default_source) {
+                return $card;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -167,6 +178,20 @@ trait Payment
             return $this->stripe_id;
         }
 
-        return $this->createStripeId();
+        $customer = $this->createAsStripeCustomer(null);
+
+        return $customer->id;
+    }
+
+    /**
+     * Updates the default card
+     * @param string $cardId The cardId to update to the default card
+     * @return $this
+     */
+    public function updateDefaultCard($cardId)
+    {
+        $card = $this->getCard($cardId);
+
+        return $this->fillCardDetails($card);
     }
 }
