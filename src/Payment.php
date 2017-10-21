@@ -14,9 +14,10 @@ trait Payment
     /**
      * Adds a card
      * @param mixed Either an array of params as per the generateToken method or simply a token
+     * @param bool $setAsDefault
      * @return array
      */
-    public function addCard($params)
+    public function addCard($params, $setAsDefault = false)
     {
         if (is_array($params)) {
             $result = $this->generateToken($params);
@@ -48,6 +49,11 @@ trait Payment
 
             $card = $stripe->cards()
                 ->create($customerId, $token);
+
+            if ($setAsDefault) {
+                // lets set this card as the default
+                $this->updateDefaultCard($card['id']);
+            }
 
             return [
                 'status' => 'success',
@@ -190,8 +196,19 @@ trait Payment
      */
     public function updateDefaultCard($cardId)
     {
+        // first lets update the default source for the stripe customer
+        $customer = $this->asStripeCustomer();
+        $customer->default_source = $cardId;
+        $result = $customer->save();
+
+        // now lets update the users default card
         $card = $this->getCard($cardId);
 
-        return $this->fillCardDetails($card);
+        $this->card_brand = $card->brand;
+        $this->card_last_four = $card->last4;
+
+        $this->save();
+
+        return $this;
     }
 }
