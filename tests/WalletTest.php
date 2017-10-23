@@ -134,6 +134,19 @@ class WalletTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(100, $result->amount);
     }
 
+    public function testChargeWithoutSubscription()
+    {
+        // lets add a default card
+        $card = $this->user->addCard('tok_ie');
+
+        // lets charge with the non default card
+        $result = $this->user->charge(100);
+
+        $this->assertEquals($card['cardId'], $result->source->id);
+
+        $this->assertEquals(100, $result->amount);
+    }
+
     public function testDeleteCard()
     {
         // lets try to delete a card
