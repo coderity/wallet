@@ -1,15 +1,51 @@
 {
     "name": "coderity/payment",
-    "description": "Coderity Payment connects your Laravel users to Stripe with a simple to use API.",
+    "description": "Coderity Wallet extends Laravel Cashier allowing users to have multiple credit cards with multiple subscriptions.",
+    "keywords": ["laravel", "stripe", "billing", "cashier", "wallet"],
     "license": "MIT",
+    "support": {
+        "issues": "https://github.com/coderity/wallet/issues",
+        "source": "https://github.com/coderity/wallet"
+    },
     "authors": [
         {
             "name": "Michael Houghton",
             "email": "me@michaelhoughton.com"
         }
     ],
-    "minimum-stability": "dev",
     "require": {
-        "cartalyst/stripe-laravel": "7.0.*"
-    }
+        "php": ">=5.5.9",
+        "cartalyst/stripe-laravel": "7.0.*",
+        "laravel/cashier": "~7.0"
+    },
+    "require-dev": {
+        "fzaninotto/faker": "^1.7",
+        "illuminate/http": "~5.5",
+        "illuminate/routing": "~5.5",
+        "illuminate/view": "~5.5",
+        "phpunit/phpunit": "~5.0",
+        "vlucas/phpdotenv": "~2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Coderity\\Wallet\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Coderity\\Wallet\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Coderity\\Wallet\\WalletServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

@@ -1,15 +1,13 @@
 <?php
-namespace Coderity\Payment;
+namespace Coderity\Wallet;
 
 use Cartalyst\Stripe\Stripe;
-use Laravel\Cashier\Billable;
-use Laravel\Cashier\Stripe\Card as StripeCard;
-use Laravel\Cashier\Stripe\Token as StripeToken;
-use Laravel\Cashier\Stripe\Customer as StripeCustomer;
+use Stripe\Charge as StripeCharge;
+use Laravel\Cashier\Billable as Cashier;
 
-trait Payment
+trait Billable
 {
-    use Billable;
+    use Cashier;
 
     /**
      * Adds a card
@@ -68,6 +66,39 @@ trait Payment
     }
 
     /**
+     * Make a "one off" charge on the customer for the given amount.
+     *
+     * @param  int  $amount
+     * @param  array  $options
+     * @return \Stripe\Charge
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function charge($amount, array $options = [])
+    {
+        $options = array_merge([
+            'currency' => $this->preferredCurrency(),
+        ], $options);
+
+        $options['amount'] = $amount;
+
+        if (! array_key_exists('source', $options) && $this->stripe_id) {
+            $options['customer'] = $this->stripe_id;
+        }
+
+        if (! array_key_exists('source', $options) && ! array_key_exists('customer', $options)) {
+            throw new InvalidArgumentException('No payment source provided.');
+        }
+
+        if (array_key_exists('cardId', $options)) {
+            $options['source'] = $options['cardId'];
+            unset($options['cardId']);
+        }
+
+        return StripeCharge::create($options, ['api_key' => $this->getStripeKey()]);
+    }
+
+    /**
      * Deletes a card
      * @param  string $cardId
      * @return array
@@ -109,14 +140,16 @@ trait Payment
         $stripe = new Stripe(Billable::getStripeKey());
 
         try {
-            $token = $stripe->tokens()->create([
+            $attributes = [
                 'card' => [
                     'number'    => $params['cardNumber'],
                     'exp_month' => $params['expiryMonth'],
                     'cvc'       => $params['cvc'],
                     'exp_year'  => $params['expiryYear'],
                 ],
-            ]);
+            ];
+
+            $token = $stripe->tokens()->create($attributes);
 
             return [
                 'status' => 'success',
@@ -187,6 +220,18 @@ trait Payment
         $customer = $this->createAsStripeCustomer(null);
 
         return $customer->id;
+    }
+
+    /**
+     * Begin creating a new subscription.
+     *
+     * @param  string  $subscription
+     * @param  string  $plan
+     * @return \Laravel\Cashier\SubscriptionBuilder
+     */
+    public function newSubscription($subscription, $plan)
+    {
+        return new SubscriptionBuilder($this, $subscription, $plan);
     }
 
     /**

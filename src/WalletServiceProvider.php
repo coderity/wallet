@@ -1,10 +1,10 @@
 <?php
 
-namespace Coderity\Payment;
+namespace Coderity\Wallet;
 
 use Illuminate\Support\ServiceProvider;
 
-class PaymentServiceProvider extends ServiceProvider
+class WalletServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
