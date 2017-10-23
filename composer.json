@@ -1,6 +1,6 @@
 {
     "name": "coderity/payment",
-    "description": "Coderity Wallet extends Laravel Cashier allowing users to have multiple credit cards with multiple subscriptions.",
+    "description": "Coderity Wallet extends Laravel Cashier allowing users to have multiple credit cards with multiple subscriptions, along with the ability to charge different cards as needed.",
     "keywords": ["laravel", "stripe", "billing", "cashier", "wallet"],
     "license": "MIT",
     "support": {
